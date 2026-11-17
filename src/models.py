@@ -11,6 +11,9 @@ from src.wishlist.models import WishlistItem
 from src.addresses.models import Address
 from src.orders.models import Order, OrderItem, OrderStatusHistory
 from src.home.models import HomePage
+from src.settings.models import StoreSettings
+from src.coupons.models import Coupon
+from src.reviews.models import Review
 
 __all__ = [
     "TimestampMixin",
@@ -28,4 +31,7 @@ __all__ = [
     "OrderItem",
     "OrderStatusHistory",
     "HomePage",
+    "StoreSettings",
+    "Coupon",
+    "Review",
 ]

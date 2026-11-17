@@ -1,1 +1,11 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.sqlite3
+.env
+.DS_Store
 firebase-service-account.json

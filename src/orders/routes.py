@@ -28,6 +28,7 @@ from src.orders.services import (
     admin_list_orders_service,
     list_customer_orders_service,
     get_order_by_public_id,
+    track_order_service,
 )
 
 # Storefront / Customer Router
@@ -63,6 +64,7 @@ def _to_order_response(order) -> OrderResponse:
         total=order.total,
         shipping_snapshot=order.shipping_snapshot,
         note=order.note,
+        coupon_code=getattr(order, "coupon_code", None),
         items=[
             OrderItemResponse(
                 public_id=item.public_id,
@@ -90,6 +92,16 @@ def _to_order_response(order) -> OrderResponse:
 
 
 # --- Customer Endpoints ---
+
+@customer_router.get("/orders/track", response_model=StandardResponse[OrderResponse])
+async def track_order(
+    order_number: str = Query(..., description="e.g. ORD-20261116-XXXX"),
+    phone: str = Query(..., description="Phone number used at checkout"),
+    session: AsyncSession = Depends(get_session),
+) -> StandardResponse[OrderResponse]:
+    order = await track_order_service(session, order_number, phone)
+    return StandardResponse(data=_to_order_response(order))
+
 
 @customer_router.post("/checkout", response_model=StandardResponse[OrderResponse], status_code=status.HTTP_201_CREATED)
 async def checkout(

@@ -1,4 +1,8 @@
-import stripe
+try:
+    import stripe
+except ImportError:
+    stripe = None
+
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -10,11 +14,14 @@ from src.common.exceptions import http_400
 async def process_stripe_webhook(
     session: AsyncSession, payload: bytes, sig_header: str
 ) -> dict:
+    if stripe is None:
+        raise http_400("Stripe library is not installed on this server")
+
     try:
         event = stripe.Webhook.construct_event(
             payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
         )
-    except (ValueError, stripe.error.SignatureVerificationError):
+    except (ValueError, getattr(stripe, "error", Exception).SignatureVerificationError):
         raise http_400("Invalid webhook signature")
 
     event_type = event.get("type")

@@ -163,7 +163,20 @@ async def checkout_service(
 
     delivery_charge = 50.0  # standard shipping
     discount = 0.0
-    total = round(subtotal + delivery_charge - discount, 2)
+    applied_coupon_code = None
+
+    if getattr(data, "coupon_code", None):
+        from src.coupons.services import validate_coupon_service
+        is_valid, discount_amount, _, coupon_obj = await validate_coupon_service(
+            session, data.coupon_code, subtotal
+        )
+        if is_valid and coupon_obj:
+            discount = discount_amount
+            applied_coupon_code = coupon_obj.code
+            coupon_obj.used_count += 1
+            session.add(coupon_obj)
+
+    total = max(0.0, round(subtotal + delivery_charge - discount, 2))
 
     order = Order(
         order_number=generate_order_number(),
@@ -177,6 +190,7 @@ async def checkout_service(
         total=total,
         shipping_snapshot=shipping_dict,
         note=data.note,
+        coupon_code=applied_coupon_code,
         is_active=True,
     )
     session.add(order)
@@ -513,3 +527,41 @@ async def list_customer_orders_service(
         .order_by(Order.created_at.desc())
     )
     return await paginate_query(session, stmt, page=page, page_size=page_size)
+
+
+async def track_order_service(
+    session: AsyncSession, order_number: str, phone: str
+) -> Order:
+    clean_num = order_number.strip().upper()
+    clean_phone = "".join(filter(str.isdigit, phone))
+    if not clean_phone or len(clean_phone) < 4:
+        raise http_400("Please provide a valid phone number", code="INVALID_PHONE")
+
+    stmt = (
+        select(Order)
+        .where(Order.order_number == clean_num, Order.is_active == True)
+        .options(
+            selectinload(Order.items).selectinload(OrderItem.product),
+            selectinload(Order.user),
+            selectinload(Order.status_history),
+        )
+    )
+    result = await session.execute(stmt)
+    order = result.scalar_one_or_none()
+    if not order:
+        raise http_404("Order not found with provided order number and phone", code="ORDER_NOT_FOUND")
+
+    order_phone = "".join(filter(str.isdigit, str(order.shipping_snapshot.get("phone", ""))))
+    if not order_phone or (clean_phone not in order_phone and order_phone not in clean_phone):
+        raise http_404("Order not found with provided order number and phone", code="ORDER_NOT_FOUND")
+
+    history_stmt = (
+        select(OrderStatusHistory)
+        .where(OrderStatusHistory.order_id == order.id)
+        .order_by(OrderStatusHistory.created_at.desc())
+    )
+    histories = (await session.execute(history_stmt)).scalars().all()
+    order.status_history = list(histories)
+
+    return order
+

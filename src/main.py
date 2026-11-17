@@ -19,7 +19,10 @@ from src.addresses.routes import router as addresses_router
 from src.orders.routes import customer_router as orders_customer_router, admin_router as orders_admin_router
 from src.admin.routes import router as admin_core_router
 from src.home.routes import public_router as home_public_router, admin_router as home_admin_router
-
+from src.settings.routes import router as settings_router
+from src.coupons.routes import public_router as coupons_public_router, admin_router as coupons_admin_router
+from src.reviews.routes import router as reviews_router, admin_router as reviews_admin_router
+from src.webhooks.routes import router as webhooks_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,6 +76,12 @@ app.include_router(orders_admin_router)
 app.include_router(admin_core_router)
 app.include_router(home_public_router)
 app.include_router(home_admin_router)
+app.include_router(settings_router, prefix="/settings", tags=["settings"])
+app.include_router(coupons_public_router)
+app.include_router(coupons_admin_router)
+app.include_router(reviews_router)
+app.include_router(reviews_admin_router)
+app.include_router(webhooks_router)
 
 
 @app.get("/health", tags=["health"])

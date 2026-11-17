@@ -19,6 +19,7 @@ class CheckoutRequest(BaseModel):
     phone: Optional[str] = None
     note: Optional[str] = None
     payment_method: PaymentMethod = PaymentMethod.COD
+    coupon_code: Optional[str] = None
 
 
 class OrderItemInput(BaseModel):
@@ -95,6 +96,7 @@ class OrderResponse(BaseModel):
     total: float
     shipping_snapshot: dict
     note: Optional[str] = None
+    coupon_code: Optional[str] = None
     items: List[OrderItemResponse] = []
     status_history: List[OrderStatusHistoryResponse] = []
     created_at: datetime

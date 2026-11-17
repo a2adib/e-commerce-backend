@@ -43,6 +43,7 @@ class Order(CommonFieldMixin, table=True):
         default={}, sa_column=Column(JSON, nullable=False)
     )
     note: Optional[str] = Field(default=None, max_length=1000)
+    coupon_code: Optional[str] = Field(default=None, max_length=50)
 
     user: Optional["User"] = Relationship(back_populates="orders")
     items: List["OrderItem"] = Relationship(
